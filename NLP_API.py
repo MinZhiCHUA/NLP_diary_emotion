@@ -6,8 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from PIL import Image
-from multiapp import MultiApp
-import pymongo
+import psycopg2
 
 import NLP_admin_api
 import NLP_user_api
