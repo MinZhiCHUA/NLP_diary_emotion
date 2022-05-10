@@ -1,0 +1,5 @@
+# ignore my temp files
+
+multiapp.py
+
+*tmp.py
