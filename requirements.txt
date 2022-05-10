@@ -5,3 +5,4 @@ seaborn
 PIL
 psycopg2
 pillow
+matplotlib
