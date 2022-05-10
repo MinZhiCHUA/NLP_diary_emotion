@@ -11,9 +11,6 @@ import psycopg2
 import NLP_admin_api
 import NLP_user_api
 
-client = pymongo.MongoClient("mongodb+srv://minzhi:RkrytombHcKarjsM@cluster0.yub63.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-db = client.test
-
 st.write("""
 
 # Emotion Diary Prediction App
