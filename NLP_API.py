@@ -7,9 +7,13 @@ import matplotlib.pyplot as plt
 
 from PIL import Image
 from multiapp import MultiApp
+import pymongo
 
 import NLP_admin_api
 import NLP_user_api
+
+client = pymongo.MongoClient("mongodb+srv://minzhi:RkrytombHcKarjsM@cluster0.yub63.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
+db = client.test
 
 st.write("""
 
@@ -64,3 +68,5 @@ if check_password():
         NLP_admin_api.app()
     else:
         NLP_user_api.app()
+
+
