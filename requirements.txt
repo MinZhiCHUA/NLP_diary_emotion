@@ -2,6 +2,6 @@ streamlit
 pandas
 numpy
 seaborn
-matplotlib
 PIL
 psycopg2
+pillow
