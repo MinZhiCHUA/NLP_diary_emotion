@@ -1,5 +1,11 @@
 # ignore my temp files
+__pycache__/
 
 multiapp.py
+NLP_API_SQL.py
+NLP_API_herokusql.py
 
 *tmp.py
+
+
+
