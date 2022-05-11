@@ -1,5 +1,6 @@
 # from .NLP_API_SQL import st
 import streamlit as st
+import pandas as pd
 # from NLP_API_SQL import conn
 
 
@@ -10,7 +11,6 @@ import streamlit as st
 
 def app(conn):
     st.title('Welcome to Admin page')
-    st. write('Admin admin admin admin admin admin admin admin admin')
 
 
     def run_query(query):
@@ -18,8 +18,20 @@ def app(conn):
             cur.execute(query)
             return cur.fetchall()
 
-    rows = run_query("SELECT * from df_user_emotion_diary_csv;")
-    st.dataframe(data=rows)
+    rows = run_query("SELECT * from df_user_info_csv;")
+
+    df_row = pd.DataFrame(rows, columns=['user_id','user_name', 'first_name', 'last_name', 'email_add'])
+
+    st.dataframe(data=df_row)
+
+    st.button('Display Emotion diary')
+    st.button('Add new User')
+
+    # Add a selectbox to the sidebar:
+    add_selectbox = st.sidebar.selectbox(
+        'Menu',
+        ('Add/delete/rename user', 'Display emotion Diary', 'Mobile phone')
+    )
     
 
 
