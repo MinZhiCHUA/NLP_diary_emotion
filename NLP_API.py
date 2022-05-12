@@ -81,7 +81,7 @@ def main():
         if st.session_state["isadmin"] == True:
             NLP_admin_api.app(conn)
         else:
-            NLP_user_api.app()
+            NLP_user_api.app(conn)
 
 
 def init_connection():
