@@ -1,11 +1,14 @@
 # ignore my temp files
 __pycache__/
 
+mz_backup/  
+
 multiapp.py
 NLP_API_SQL.py
 NLP_API_herokusql.py
 
 *tmp.py
+*39.pyc
+NLP_admin_api.cpython*
 
-
-
+SGD_model.sav
