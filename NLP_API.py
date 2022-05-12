@@ -84,7 +84,7 @@ def main():
     if check_password():
         
         if st.session_state["isadmin"] == True:
-            NLP_admin_api.app(conn) ################ to test side bar function
+            NLP_admin_api.app(conn)
         else:
             NLP_user_api.app(conn)
 
