@@ -9,9 +9,13 @@ from PIL import Image
 import psycopg2
 
 import NLP_admin_api
+import NLP_admin_api
 import NLP_user_api
 
 def main():
+
+    # st.set_page_config(layout="wide")
+
     st.write("""
 
     # Emotion Diary Prediction App
@@ -20,10 +24,11 @@ def main():
     This app predicts the emotion of a user based on their Emotion Diary. 
 
     """)
-
+    i1, i2 = st.columns(2)
     image = Image.open("img/wordcloud.png") 
 
-    st.image(image=image)
+    i1.image(image=image)
+    i2.image(image=image)
 
     conn = init_connection()
 
@@ -35,7 +40,7 @@ def main():
     rows = run_query("SELECT * from df_user_info_csv;")
 
 
-    st.table(data=rows)
+    # st.table(data=rows)
 
     def check_password():
 
@@ -70,7 +75,7 @@ def main():
             st.text_input(
                 "Password", type="password", on_change=password_entered, key="password"
             )
-            st.error("😕 User not known or password incorrect")
+            # st.error("😕 User not known or password incorrect")
             return False
         else:
             # Password correct.
@@ -79,7 +84,7 @@ def main():
     if check_password():
         
         if st.session_state["isadmin"] == True:
-            NLP_admin_api.app(conn)
+            NLP_admin_api.app(conn) ################ to test side bar function
         else:
             NLP_user_api.app()
 
