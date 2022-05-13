@@ -5,6 +5,9 @@ import pandas as pd
 import pickle
 import matplotlib.pylab as plt
 import datetime as dt
+from datetime import datetime
+
+import matplotlib.dates as mdates
 
 
 def run_query(query, conn):
@@ -12,9 +15,143 @@ def run_query(query, conn):
             cur.execute(query)
             return cur.fetchall()
 
+def run_query_insert(conn,query,data):
+    with conn.cursor() as cur:
+        cur.execute(query,data)
+        conn.commit()
+        return "succeed"
+
+def func_create_user_first(df_data_user,conn, input_user):
+    input_firstname = st.text_input("First Name:", "")  
+    input_lastname = st.text_input("Last Name:", "")  
+    input_email = st.text_input("Email:", "")  
+    btn_create_user = st.button(label = "Create New User")
+
+    if btn_create_user:
+        input_id = int(df_data_user['user_id'].max()+1)
+
+        q = 'INSERT INTO df_user_info_csv(user_id,user_name,first_name,last_name,email_add) VALUES (%s,%s,%s,%s,%s);'
+        data = (int(input_id),input_user,input_firstname,input_lastname,input_email)
+
+        run_query_insert(conn,q,data)
+        st.write('User profile for '+input_user+" is created")
+        st.session_state['create_new_user'] = False
+        # return False
+
+
+def func_modify_user(conn, modify_userid,modify_username,modify_firstname,modify_lastname,modify_emailadd):
+    st.session_state['create_new_user'] = False
+    st.session_state['modify_new_user'] = True
+    
+    input_modify_firstname = st.text_input("First Name:", str(modify_firstname))  
+    input_modify_lastname = st.text_input("Last Name:", str(modify_lastname))  
+    input_modify_email = st.text_input("Email:", str(modify_emailadd))  
+
+    btn_modify_user = st.button(label = "Modify user profile")
+
+    if btn_modify_user:
+
+        q2 = "UPDATE df_user_info_csv SET first_name=%s, last_name=%s,email_add=%s WHERE user_name=%s;"
+        data2 = input_modify_firstname,input_modify_lastname,input_modify_email,modify_username
+
+        run_query_insert(conn,q2,data2)
+        st.write('User profile for '+modify_username+" is modified")
+
+        st.session_state['modify_new_user'] = False
+
+
+def func_delete_user(conn, delete_username):
+    q3 = 'DELETE FROM df_user_info_csv WHERE "user_name"=%s;'
+    data3 = (delete_username,)
+    # print(delete_username)
+    run_query_insert(conn,q3,data3)
+    st.write('User profile for '+delete_username+" is deleted")
+
+    st.session_state['modify_new_user'] = False
+    
+def func_display_stacked_bar(df):
+
+    df_emotion_bydate = df.groupby(["date","Predicted_Emotion"]).count().reset_index() 
+    df_emotion_bydate_pivot = df_emotion_bydate.pivot(index='date', columns='Predicted_Emotion', values='text').fillna(0).reset_index() 
+
+    width = 0.35
+    label = ['happy', 'love', 'surprise', 'anger', 'fear',  'sadness']
+
+    for emo in label:
+        df_emotion_bydate_pivot[emo] = df_emotion_bydate_pivot[emo].astype(int)
+
+    fig3, ax3 = plt.subplots() 
+
+    date = pd.to_datetime(df_emotion_bydate_pivot['date'], format='%Y-%m-%d')
+
+    date = date.dt.strftime('%m-%d')
+    anger = df_emotion_bydate_pivot['anger']
+    fear = df_emotion_bydate_pivot['fear']
+    sadness = df_emotion_bydate_pivot['sadness']
+    surprise = df_emotion_bydate_pivot['surprise']
+    love = df_emotion_bydate_pivot['love']
+    happy = df_emotion_bydate_pivot['happy']
+
+    ax3.bar(date, happy, width, label='happy',)
+    ax3.bar(date, love, width, label='love',bottom=happy)
+    ax3.bar(date, surprise, width, label='surprise',bottom=happy+love)
+    ax3.bar(date, sadness, width, label='sadness',bottom=happy+love+surprise)
+    ax3.bar(date, fear, width, label='fear',bottom=happy+love+surprise+sadness)
+    ax3.bar(date, anger, width, label='anger',bottom=happy+love+surprise+sadness+fear)
+
+
+    ax3.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
+    
+    ax3.set_ylabel('count')
+    ax3.set_title('Emotion Diary for all users')
+    ax3.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+
+    return fig3, df_emotion_bydate_pivot
+
+def func_display_line_graph(df):
+    df_emotion_bydate = df.groupby(["date","Predicted_Emotion"]).count().reset_index() 
+    df_emotion_bydate_pivot = df_emotion_bydate.pivot(index='date', columns='Predicted_Emotion', values='text').fillna(0).reset_index() 
+
+    width = 0.35
+    label = ['happy', 'love', 'surprise', 'anger', 'fear',  'sadness']
+
+    fig4, ax4 = plt.subplots() 
+
+    date = pd.to_datetime(df_emotion_bydate_pivot['date'], format='%Y-%m-%d')
+
+    date = date.dt.strftime('%m-%d')
+    for emo in label:
+        df_emotion_bydate_pivot[emo] = df_emotion_bydate_pivot[emo].astype(int)
+        ax4.plot(date, df_emotion_bydate_pivot[emo], label=emo)
+
+    ax4.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
+    
+    ax4.set_ylabel('count')
+    ax4.set_title('Emotion Diary for all users')
+    ax4.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+
+    return fig4, df_emotion_bydate_pivot
+
+
+def init():
+    # Initialization
+    if 'create_new_user' not in st.session_state:
+        st.session_state['create_new_user'] = False
+
+    if 'modify_new_user' not in st.session_state:
+        st.session_state['modify_new_user'] = False
+    
+    if 'delete_new_user' not in st.session_state:
+        st.session_state['delete_new_user'] = False
+
 def app(conn):
 
+    
     filename = 'SGD_model.sav'
+
+    # st.write(st.session_state)
+    init()
+    # st.write(st.session_state)
 
     data = run_query("SELECT * from df_user_emotion_diary_csv;", conn)
     df_data_diary = pd.DataFrame(data, columns=['user_id','text', 'date'])
@@ -26,9 +163,6 @@ def app(conn):
     y_pred = model.predict(y_all_test)
 
     df_data_diary['Predicted_Emotion'] = y_pred
-
-
-
 
     data = run_query("SELECT * from df_user_info_csv;", conn)
     df_data_user = pd.DataFrame(data, columns=['user_id','user_name', 'first_name', 'last_name', 'email_add'])
@@ -48,12 +182,121 @@ def app(conn):
         input_username2 = st.text_input("Just this user", "Enter a username")  
         apply_button2 = st.form_submit_button(label = "Display")
 
+        existing_user = str(df_data_user['user_name'])
+
+    # Create a new user
+    if apply_button and select_func=='Create New':
+        st.session_state['delete_new_user'] = False
+        st.session_state['modify_new_user'] = False
+
+        st.subheader('Creating a new user')
+        
+        if  input_username1 in existing_user:
+            st.error("😕 Error! This user already exists")
+        else:
+            # st.write(st.session_state)
+            st.session_state['create_new_user'] = True
+    
+    if st.session_state['create_new_user'] == True:
+        st.session_state['delete_new_user'] = False
+        st.session_state['modify_new_user'] = False
+        func_create_user_first(df_data_user,conn, input_username1)
+
+    # Modify an existing user
+    if apply_button and select_func=='Modify':    
+        st.session_state['create_new_user'] = False
+        st.session_state['delete_new_user'] = False 
+        st.subheader('Modify a user')
+
+        if  input_username1 not in existing_user:
+            st.error("😕 Error! This user does not exists in the database")
+            st.subheader('All Users in database')
+            st.dataframe(df_data_user)
+            st.session_state['create_new_user'] = False
+        else:
+            # st.write(st.session_state)
+            st.session_state['modify_new_user'] = True
+
+    if st.session_state['modify_new_user'] == True:
+
+        st.session_state['create_new_user'] = False
+        st.session_state['delete_new_user'] = False
+        
+        st.subheader('Please make the changes in '+input_username1)
+        user_profile = df_data_user.loc[df_data_user['user_name']==input_username1]
+
+        modify_userid = int(user_profile.user_id.iloc[0])
+        modify_username = str(user_profile.user_name.iloc[0])
+        modify_firstname = str(user_profile.first_name.iloc[0])
+        modify_lastname = str(user_profile.last_name.iloc[0])
+        modify_emailadd = str(user_profile.email_add.iloc[0])
+
+        func_modify_user(conn, modify_userid,modify_username,modify_firstname,modify_lastname,modify_emailadd)
+
+
+    # Remove an existing user
+    if apply_button and select_func=='Delete':
+        st.session_state['create_new_user'] = False
+        st.session_state['modify_new_user'] = False
+        
+
+        st.subheader('Delete a user')
+
+        if  input_username1 not in existing_user:
+            st.error("😕 Error! This user does not exists in the database")
+            st.subheader('All Users in database')
+            st.dataframe(df_data_user)
+        else:
+            # st.write(st.session_state)
+            st.session_state['delete_new_user'] = True
+
+
+    if st.session_state['delete_new_user'] == True:
+
+        st.session_state['create_new_user'] = False
+        st.session_state['modify_new_user'] = False
+
+        user_profile = df_data_user.loc[df_data_user['user_name']==input_username1]
+        st.dataframe(user_profile)
+
+        st.subheader('Are you sure that you want to delete this user?')
+
+        c1,c2 = st.columns(2)
+        delete_yes = c1.button(label='Yes')
+        delete_no = c2.button(label='No')
+
+        if delete_yes:
+            func_delete_user(conn,input_username1)
+
+        if delete_no:
+            st.write('Delete canceled')
+
+
+    if all_info:
+        st.session_state['create_new_user'] = False
+        st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
+
+        st.subheader('User Database')
+        st.dataframe(df_data_user)
+
+    if apply_button2:
+        st.session_state['create_new_user'] = False
+        st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
+
+        st.subheader('User profile for '+input_username2)
+        st.dataframe(df_data_user.loc[df_data_user['user_name']==input_username2])
+
     with st.sidebar.form(key ='Form2'):
         st.write("Users' Emotion Diaries", )
 
         format = 'MMM DD'  # format output
-        start_date = dt.date(year=2022,month=4,day=9)
+        # start_date = dt.date(year=2022,month=4,day=1)
         end_date = dt.datetime.now().date()
+
+        date_time_obj = datetime.strptime(df_data_diary['date'].min(), '%Y-%m-%d')
+        start_date = date_time_obj.date()
         max_days = end_date-start_date
 
         values = st.slider('Select a range of dates', start_date, end_date , (start_date, end_date), format=format)
@@ -79,20 +322,23 @@ def app(conn):
             else:
                 list_date_str.append(str(date_to_display[i].year)+'-'+str(date_to_display[i].month)+'-'+str(date_to_display[i].day))
 
-    if all_info:
-        st.subheader('User Database')
-        st.dataframe(df_data_user)
-
-    if apply_button2:
-        st.subheader('Emotion Diary for '+input_username2)
-        st.dataframe(df_data_user.loc[df_data_user['user_name']==input_username2])
-
 
     if btn_diary_all:
-        
+        st.session_state['create_new_user'] = False
+        st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
+
         df_data_diary_range = df_data_diary[df_data_diary['date'].isin(list_date_str)]
 
         st.subheader('Emotion Diary for all Users')
+
+        # value = range(0,600,100)
+        # counter = 0
+        # label = ['happy', 'love', 'surprise', 'sadness',  'fear','anger']
+        # for emo in label:
+        #     df_data_diary_range.loc[df_data_diary_range['Predicted_Emotion'] == emo, 'Emo_value'] = value[counter]
+        #     counter = counter + 1
+
 
         mood_count = df_data_diary_range['Predicted_Emotion'].value_counts()
 
@@ -106,10 +352,25 @@ def app(conn):
 
 
         c1, c2 = st.columns(2)
+        # c1.dataframe(df_data_diary_range.style.background_gradient(axis=0, gmap=df_data_diary_range['Emo_value'], cmap='YlOrRd')\
+        #     .hide_columns()
         c1.dataframe(df_data_diary_range)
         c2.pyplot(fig1)
 
+        fig3, _ = func_display_stacked_bar(df_data_diary_range)
+        st.pyplot(fig=fig3)
+
+        # choose_a_mood = st.checkbox('What would you like to do?', ('Create New', 'Modify', 'Delete'))
+        fig4, df_emotion_bydate_pivot = func_display_line_graph(df_data_diary_range)
+        st.pyplot(fig=fig4)
+
+
+        st.dataframe(df_emotion_bydate_pivot)
+
     if btn_diary_user:
+        st.session_state['create_new_user'] = False
+        st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
 
         user_id = df_data_user['user_id'].loc[df_data_user['user_name'] == input_username_diary].values
         df_user_diary = df_data_diary.loc[df_data_diary['user_id'] == user_id[0]]
@@ -132,3 +393,6 @@ def app(conn):
         c1, c2 = st.columns(2)
         c1.dataframe(df_user_diary_range)
         c2.pyplot(fig2)
+
+        # fig5, _ = func_display_stacked_bar(df_user_diary_range)
+        # st.pyplot(fig=fig5)
