@@ -28,7 +28,7 @@ def app(conn):
     #     display_all = st.form_submit_button("Click to read Diary")
     #     display_date = st.date_input("Select a date")
     #     display_date_button = st.form_submit_button("Click to read your diary at a specific date") 
-
+    
 
     #save user_name
     if 'username' not in st.session_state:
@@ -51,16 +51,17 @@ def app(conn):
     df_diary = pd.DataFrame(rows,columns=['user_id', 'text', 'date'])
     df_user = df_diary[df_diary["user_id"]==int(user_id)]
     df_date = df_user[df_user["date"]==str(date.today())]
-    
+
     
     st.title(f'Welcome to your diary {user_fn}')
 
     #-----------row 1-------------------
-    a1, a2, a3 = st.columns(3)
+    a1, a2 = st.columns(2)
     with a1:     
         #textbox for add a niew diary
-        st.text_input("Write your mood",key="mood")
-        #st.write(st.session_state["mood"])
+        st.markdown("### Write your mood")
+        st.text_input(" ",key="mood")
+
 
         if st.button(label='Add your mood to your diary'):
             # aller chercher les infos du patient
@@ -73,13 +74,13 @@ def app(conn):
 
 
     with a2:
-        st.write("Modify your text")
+        st.markdown("### Modify your text")
         se = list()
         for r in df_date["text"]:
             se.append(r[0:min(20,len(r))])
         rad = st.radio("select the one your want to modify",se)
         
-        modify = st.text_input(rad)
+        modify = st.text_input(f'"{rad}" will be changed to :')
         if st.button("Apply"):
             # delete 
             q2 = 'DELETE FROM df_user_emotion_diary_csv WHERE "text" = %s;'
@@ -91,30 +92,33 @@ def app(conn):
             run_query_insert(conn,q,data)
             st.write("Diary update")
 
-    with a3:
-        st.text_input("Text to delete",key="to_del")
-        if st.button(label='del your mood'):
-            q2 = 'DELETE FROM df_user_emotion_diary_csv WHERE "text" = %s;'
-            data2 = (st.session_state["to_del"],)
-            run_query_insert(conn,q2,data2)
+    # with a3:
+    #     st.text_input("Text to delete",key="to_del")
+    #     if st.button(label='del your mood'):
+    #         q2 = 'DELETE FROM df_user_emotion_diary_csv WHERE "text" = %s;'
+    #         data2 = (st.session_state["to_del"],)
+    #         run_query_insert(conn,q2,data2)
 
 
 #--------------------row 2------------------------
-    st.write("Your diary for today")
-    st.dataframe(df_date)
+    #st.markdown("### Your diary for today")
+    st.markdown("<h1 style='text-align: center; color: black;'>Your diary for today</h1>", unsafe_allow_html=True)
+    st.dataframe(df_date["text"])
 
 #------------------row 3----------------------    
     b1, b2 = st.columns(2)    
     with b1:
+        st.markdown("### Your diary")
         display_all = st.button("Read your diary")
         if display_all:
-            st.dataframe(df_user)
+            st.dataframe(df_user[["text","date"]])
     
     with b2:
+        st.markdown("### Day to day diary ")
         display_date = st.date_input("Select a date")
         display_date_button = st.button("Click to read your diary at a specific date")
         if display_date_button:
-            st.dataframe(df_user[df_user["date"]==str(display_date)])
+            st.dataframe(df_user[df_user["date"]==str(display_date)][["text","date"]])
 
 
 
