@@ -26,18 +26,9 @@ def func_create_user_first(df_data_user,conn, input_user):
 
     if btn_create_user:
         input_id = int(df_data_user['user_id'].max()+1)
-        # 'user_id','user_name', 'first_name', 'last_name', 'email_add'
+
         q = 'INSERT INTO df_user_info_csv(user_id,user_name,first_name,last_name,email_add) VALUES (%s,%s,%s,%s,%s);'
-        # q2 = ' UPDATE df_user_info_csv SET first_name=%s, last_name=%s,email_add=%s WHERE user_name=%s'
-        # data2 = input_firstname,input_lastname,input_email, input_user
-        # q3 = 'DELETE FROM df_user_info_csv WHERE user_name=%s'
-        # data3 = input_user
         data = (int(input_id),input_user,input_firstname,input_lastname,input_email)
-        # print(int(input_id))
-        # print(input_user)
-        # print(input_firstname)
-        # print(input_lastname)
-        # print(input_email)
 
         run_query_insert(conn,q,data)
         st.write('User profile for '+input_user+" is created")
@@ -76,7 +67,6 @@ def func_delete_user(conn, delete_username):
     st.session_state['modify_new_user'] = False
     
 
-
 def init():
     # Initialization
     if 'create_new_user' not in st.session_state:
@@ -107,9 +97,6 @@ def app(conn):
     y_pred = model.predict(y_all_test)
 
     df_data_diary['Predicted_Emotion'] = y_pred
-
-
-
 
     data = run_query("SELECT * from df_user_info_csv;", conn)
     df_data_user = pd.DataFrame(data, columns=['user_id','user_name', 'first_name', 'last_name', 'email_add'])
@@ -145,26 +132,30 @@ def app(conn):
             st.session_state['create_new_user'] = True
     
     if st.session_state['create_new_user'] == True:
+        st.session_state['delete_new_user'] = False
+        st.session_state['modify_new_user'] = False
         func_create_user_first(df_data_user,conn, input_username1)
 
     # Modify an existing user
-    if apply_button and select_func=='Modify':
+    if apply_button and select_func=='Modify':    
         st.session_state['create_new_user'] = False
-        st.session_state['delete_new_user'] = False
-        # st.session_state['modify_new_user'] = False
-
+        st.session_state['delete_new_user'] = False 
         st.subheader('Modify a user')
 
         if  input_username1 not in existing_user:
             st.error("😕 Error! This user does not exists in the database")
             st.subheader('All Users in database')
             st.dataframe(df_data_user)
+            st.session_state['create_new_user'] = False
         else:
             # st.write(st.session_state)
             st.session_state['modify_new_user'] = True
 
     if st.session_state['modify_new_user'] == True:
 
+        st.session_state['create_new_user'] = False
+        st.session_state['delete_new_user'] = False
+        
         st.subheader('Please make the changes in '+input_username1)
         user_profile = df_data_user.loc[df_data_user['user_name']==input_username1]
 
@@ -175,6 +166,7 @@ def app(conn):
         modify_emailadd = str(user_profile.email_add.iloc[0])
 
         func_modify_user(conn, modify_userid,modify_username,modify_firstname,modify_lastname,modify_emailadd)
+
 
     # Remove an existing user
     if apply_button and select_func=='Delete':
@@ -217,6 +209,7 @@ def app(conn):
     if all_info:
         st.session_state['create_new_user'] = False
         st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
 
         st.subheader('User Database')
         st.dataframe(df_data_user)
@@ -224,6 +217,7 @@ def app(conn):
     if apply_button2:
         st.session_state['create_new_user'] = False
         st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
 
         st.subheader('User profile for '+input_username2)
         st.dataframe(df_data_user.loc[df_data_user['user_name']==input_username2])
@@ -265,6 +259,7 @@ def app(conn):
     if btn_diary_all:
         st.session_state['create_new_user'] = False
         st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
 
         df_data_diary_range = df_data_diary[df_data_diary['date'].isin(list_date_str)]
 
@@ -286,8 +281,9 @@ def app(conn):
         c2.pyplot(fig1)
 
     if btn_diary_user:
-        st.session_state['modify_new_user'] = False
         st.session_state['create_new_user'] = False
+        st.session_state['modify_new_user'] = False
+        st.session_state['delete_new_user'] = False
 
         user_id = df_data_user['user_id'].loc[df_data_user['user_name'] == input_username_diary].values
         df_user_diary = df_data_diary.loc[df_data_diary['user_id'] == user_id[0]]
