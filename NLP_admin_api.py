@@ -5,6 +5,9 @@ import pandas as pd
 import pickle
 import matplotlib.pylab as plt
 import datetime as dt
+from datetime import datetime
+
+import matplotlib.dates as mdates
 
 
 def run_query(query, conn):
@@ -66,6 +69,69 @@ def func_delete_user(conn, delete_username):
 
     st.session_state['modify_new_user'] = False
     
+def func_display_stacked_bar(df):
+
+    df_emotion_bydate = df.groupby(["date","Predicted_Emotion"]).count().reset_index() 
+    df_emotion_bydate_pivot = df_emotion_bydate.pivot(index='date', columns='Predicted_Emotion', values='text').fillna(0).reset_index() 
+
+    width = 0.35
+    label = ['happy', 'love', 'surprise', 'anger', 'fear',  'sadness']
+
+    for emo in label:
+        df_emotion_bydate_pivot[emo] = df_emotion_bydate_pivot[emo].astype(int)
+
+    fig3, ax3 = plt.subplots() 
+
+    date = pd.to_datetime(df_emotion_bydate_pivot['date'], format='%Y-%m-%d')
+
+    date = date.dt.strftime('%m-%d')
+    anger = df_emotion_bydate_pivot['anger']
+    fear = df_emotion_bydate_pivot['fear']
+    sadness = df_emotion_bydate_pivot['sadness']
+    surprise = df_emotion_bydate_pivot['surprise']
+    love = df_emotion_bydate_pivot['love']
+    happy = df_emotion_bydate_pivot['happy']
+
+    ax3.bar(date, happy, width, label='happy',)
+    ax3.bar(date, love, width, label='love',bottom=happy)
+    ax3.bar(date, surprise, width, label='surprise',bottom=happy+love)
+    ax3.bar(date, sadness, width, label='sadness',bottom=happy+love+surprise)
+    ax3.bar(date, fear, width, label='fear',bottom=happy+love+surprise+sadness)
+    ax3.bar(date, anger, width, label='anger',bottom=happy+love+surprise+sadness+fear)
+
+
+    ax3.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
+    
+    ax3.set_ylabel('count')
+    ax3.set_title('Emotion Diary for all users')
+    ax3.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+
+    return fig3, df_emotion_bydate_pivot
+
+def func_display_line_graph(df):
+    df_emotion_bydate = df.groupby(["date","Predicted_Emotion"]).count().reset_index() 
+    df_emotion_bydate_pivot = df_emotion_bydate.pivot(index='date', columns='Predicted_Emotion', values='text').fillna(0).reset_index() 
+
+    width = 0.35
+    label = ['happy', 'love', 'surprise', 'anger', 'fear',  'sadness']
+
+    fig4, ax4 = plt.subplots() 
+
+    date = pd.to_datetime(df_emotion_bydate_pivot['date'], format='%Y-%m-%d')
+
+    date = date.dt.strftime('%m-%d')
+    for emo in label:
+        df_emotion_bydate_pivot[emo] = df_emotion_bydate_pivot[emo].astype(int)
+        ax4.plot(date, df_emotion_bydate_pivot[emo], label=emo)
+
+    ax4.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
+    
+    ax4.set_ylabel('count')
+    ax4.set_title('Emotion Diary for all users')
+    ax4.legend(bbox_to_anchor=(1.04,1), loc="upper left")
+
+    return fig4, df_emotion_bydate_pivot
+
 
 def init():
     # Initialization
@@ -226,8 +292,11 @@ def app(conn):
         st.write("Users' Emotion Diaries", )
 
         format = 'MMM DD'  # format output
-        start_date = dt.date(year=2022,month=4,day=9)
+        # start_date = dt.date(year=2022,month=4,day=1)
         end_date = dt.datetime.now().date()
+
+        date_time_obj = datetime.strptime(df_data_diary['date'].min(), '%Y-%m-%d')
+        start_date = date_time_obj.date()
         max_days = end_date-start_date
 
         values = st.slider('Select a range of dates', start_date, end_date , (start_date, end_date), format=format)
@@ -254,8 +323,6 @@ def app(conn):
                 list_date_str.append(str(date_to_display[i].year)+'-'+str(date_to_display[i].month)+'-'+str(date_to_display[i].day))
 
 
-
-
     if btn_diary_all:
         st.session_state['create_new_user'] = False
         st.session_state['modify_new_user'] = False
@@ -264,6 +331,14 @@ def app(conn):
         df_data_diary_range = df_data_diary[df_data_diary['date'].isin(list_date_str)]
 
         st.subheader('Emotion Diary for all Users')
+
+        # value = range(0,600,100)
+        # counter = 0
+        # label = ['happy', 'love', 'surprise', 'sadness',  'fear','anger']
+        # for emo in label:
+        #     df_data_diary_range.loc[df_data_diary_range['Predicted_Emotion'] == emo, 'Emo_value'] = value[counter]
+        #     counter = counter + 1
+
 
         mood_count = df_data_diary_range['Predicted_Emotion'].value_counts()
 
@@ -277,8 +352,20 @@ def app(conn):
 
 
         c1, c2 = st.columns(2)
+        # c1.dataframe(df_data_diary_range.style.background_gradient(axis=0, gmap=df_data_diary_range['Emo_value'], cmap='YlOrRd')\
+        #     .hide_columns()
         c1.dataframe(df_data_diary_range)
         c2.pyplot(fig1)
+
+        fig3, _ = func_display_stacked_bar(df_data_diary_range)
+        st.pyplot(fig=fig3)
+
+        # choose_a_mood = st.checkbox('What would you like to do?', ('Create New', 'Modify', 'Delete'))
+        fig4, df_emotion_bydate_pivot = func_display_line_graph(df_data_diary_range)
+        st.pyplot(fig=fig4)
+
+
+        st.dataframe(df_emotion_bydate_pivot)
 
     if btn_diary_user:
         st.session_state['create_new_user'] = False
@@ -306,3 +393,6 @@ def app(conn):
         c1, c2 = st.columns(2)
         c1.dataframe(df_user_diary_range)
         c2.pyplot(fig2)
+
+        # fig5, _ = func_display_stacked_bar(df_user_diary_range)
+        # st.pyplot(fig=fig5)
