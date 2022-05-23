@@ -5,6 +5,9 @@
 
 A life coach wants to predict the emotions of a personnal diary for different user. Here comes our app.
 
+The app:
+https://nlpemotiondiary.herokuapp.com/
+
 ## To start
 
 Log in with your user account or ask the admin to create you one. You can manage your diary as you want : create new text or modify existing ones.
